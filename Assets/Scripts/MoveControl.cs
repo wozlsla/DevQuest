@@ -9,9 +9,10 @@ public class MoveControl : MonoBehaviour
     [Header("Preset Fields")]
     [SerializeField] private Rigidbody rigid;
     [SerializeField] private CapsuleCollider col;
-    
+
     [Header("Settings")]
     [SerializeField][Range(1f, 10f)] private float moveSpeed;
+    [SerializeField][Range(1.5f, 3f)] private float sprintSpeed = 2f;
     [SerializeField][Range(1f, 10f)] private float jumpAmount;
 
     //FSM(finite state machine)에 대한 더 자세한 내용은 세션 3회차에서 배울 것입니다!
@@ -116,9 +117,16 @@ public class MoveControl : MonoBehaviour
         if (Input.GetKey(KeyCode.A)) direction += -right; //Left
         if (Input.GetKey(KeyCode.S)) direction += -forward; //Back
         if (Input.GetKey(KeyCode.D)) direction += right; //Right
-        
+
         direction.Normalize(); //대각선 이동(Ex. W + A)시에도 동일한 이동속도를 위해 direction을 Normalize
+
+        float finalSpeed = moveSpeed;
         
-        transform.Translate( moveSpeed * Time.deltaTime * direction); //Move
+        if (Input.GetKey(KeyCode.W) && Input.GetKey(KeyCode.LeftShift))
+        {
+            finalSpeed = moveSpeed * sprintSpeed;
+        }
+        
+        transform.Translate( finalSpeed * Time.deltaTime * direction); //Move
     }
 }
