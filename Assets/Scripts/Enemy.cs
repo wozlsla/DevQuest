@@ -7,7 +7,7 @@ using Random = UnityEngine.Random;
 
 public class Enemy : MonoBehaviour
 {
-    [Header("Preset Fields")] 
+    [Header("Preset Fields")]
     [SerializeField] private Animator animator;
     [SerializeField] private GameObject splashFx;
     [SerializeField] private NavMeshAgent agent; // NavMesh Agent 컴포넌트
@@ -28,7 +28,7 @@ public class Enemy : MonoBehaviour
         Chase, // 추적
         Attack
     }
-    
+
     [Header("Debug")]
     public State state = State.None;
     public State nextState = State.None;
@@ -52,9 +52,9 @@ public class Enemy : MonoBehaviour
         bool playerInSight = CatchPlayer(); // 프레임마다 시야 검사
 
         //1. 스테이트 전환 상황 판단
-        if (nextState == State.None) 
+        if (nextState == State.None)
         {
-            switch (state) 
+            switch (state)
             {
                 case State.Idle:
                     /* -> Chase 상태에서 처리
@@ -70,7 +70,7 @@ public class Enemy : MonoBehaviour
                         nextState = State.Chase;
                     }
                     // 대기 시간 끝나면 다시 순찰 상태로 전환
-                    else if (stateTime >= patrolWaitTime) 
+                    else if (stateTime >= patrolWaitTime)
                     {
                         nextState = State.Patrol;
                     }
@@ -89,7 +89,7 @@ public class Enemy : MonoBehaviour
                         nextState = State.Chase;
                     }
                     // NavMeshAgent의 남은 거리가 0.5f 이하이면 목적지에 도착한 것으로 판단하고 대기 상태(Idle)로 전환
-                    else if (agent.remainingDistance <= 0.5f && !agent.pathPending) 
+                    else if (agent.remainingDistance <= 0.5f && !agent.pathPending)
                     {
                         nextState = State.Idle;
                     }
@@ -100,7 +100,7 @@ public class Enemy : MonoBehaviour
                     if (Physics.CheckSphere(transform.position, attackRange, 1 << 6, QueryTriggerInteraction.Ignore))
                     {
                         nextState = State.Attack; // 공격 범위 안에 들어오면 공격
-                    } 
+                    }
                     else if (!playerInSight) // 플레이어를 놓치면 Idle 상태로 복귀
                     {
                         nextState = State.Idle;
@@ -120,38 +120,38 @@ public class Enemy : MonoBehaviour
             {
                 case State.Idle:
                     agent.isStopped = true; // 모든 이동 계산과 물리적 힘 적용 정지 -> Overshooting 등 방지
-                    animator.SetBool("isMoving", false); // 애니메이션 상태 초기화 (선택..)
+                    // animator.SetBool("isMoving", false); // 애니메이션 상태 초기화 (선택..)
                     break;
                 case State.Attack:
                     agent.isStopped = true;
-                    animator.SetBool("isMoving", false);
+                    // animator.SetBool("isMoving", false);
                     Attack();
                     break;
                 //insert code here...
                 case State.Patrol:
                     agent.isStopped = false;
                     FindNewPatrolPoint(); // 새로운 순찰 지점 찾기
-                    animator.SetBool("isMoving", true);
+                    // animator.SetBool("isMoving", true);
                     break;
                 case State.Chase:
                     agent.isStopped = false;
-                    animator.SetBool("isMoving", true);
+                    // animator.SetBool("isMoving", true);
                     break;
             }
         }
-        
+
         //3. 글로벌 & 스테이트 업데이트
         //insert code here...
         if (state == State.Chase)
         {
-             // 매 Update에서 목적지를 플레이어 위치로 업데이트하여 추적
-             agent.SetDestination(player.position);
-             
-             // 플레이어를 바라보게 하여 시야각 검사
-             LookAtTarget(player.position);
+            // 매 Update에서 목적지를 플레이어 위치로 업데이트하여 추적
+            agent.SetDestination(player.position);
+
+            // 플레이어를 바라보게 하여 시야각 검사
+            LookAtTarget(player.position);
         }
     }
-    
+
     private void Attack() //현재 공격은 애니메이션만 작동합니다.
     {
         animator.SetTrigger("attack");
@@ -161,7 +161,7 @@ public class Enemy : MonoBehaviour
     {
         Instantiate(splashFx, transform.position, Quaternion.identity);
     }
-    
+
     public void WhenAnimationDone() //Unity Animation Event 에서 실행됩니다.
     {
         attackDone = true;
@@ -183,18 +183,18 @@ public class Enemy : MonoBehaviour
         // Quaternion.Slerp를 사용하여 부드럽게 회전
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
     }
-    
+
     // 순찰 목표 지점을 NavMesh 위에서 찾아 설정
     private void FindNewPatrolPoint()
     {
         // 현재 위치(transform.position)를 중심으로 patrolRange 반경 내에서 랜덤 지점 탐색
         Vector3 randomDirection = Random.insideUnitSphere * patrolRange;
         randomDirection += transform.position;
-        
+
         NavMeshHit hit;
         if (NavMesh.SamplePosition(randomDirection, out hit, patrolRange, NavMesh.AllAreas))
         {
-            agent.SetDestination(hit.position); 
+            agent.SetDestination(hit.position);
         }
     }
 
@@ -207,7 +207,7 @@ public class Enemy : MonoBehaviour
 
         // 1. 거리 검사: sightRange 내에 있는지 확인
         if (distanceToPlayer > sightRange) return false;
-        
+
         // 2. 시야각 검사: fieldOfView 내에 있는지 확인
         float angle = Vector3.Angle(transform.forward, directionToPlayer);
         if (angle > fieldOfView / 2f) return false;
@@ -229,6 +229,6 @@ public class Enemy : MonoBehaviour
         }
 
         // Raycast가 아무것도 맞추지 않았으면 (거리가 짧거나, 플레이어를 정확히 맞추지 못했을 경우)
-        return true; 
+        return true;
     }
 }
