@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CCinputManager : MonoBehaviour
 {
@@ -11,6 +12,11 @@ public class CCinputManager : MonoBehaviour
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float jumpHeight = 1.2f;
 
+    [Header("Fire Settings")]
+    [SerializeField] private GameObject projectilePrefab; // 발사체 프리팹
+    [SerializeField] private Transform firePoint; // 발사 위치 (없으면 카메라 위치)
+    [SerializeField] private float projectileSpeed = 30f; // 발사체 속도
+    [SerializeField] private float raycastDistance = 100f; // 조준점 찾기용 Raycast 거리
 
     private PlayerActions input;
     private Vector2 moveInput;
@@ -33,6 +39,9 @@ public class CCinputManager : MonoBehaviour
 
         // (선택) Jump 액션을 만들었다면 예시:
         input.Players.Jump.performed += _ => TryJump();
+
+        // Fire 액션 (마우스 클릭으로 발사)
+        input.Players.Fire.performed += _ => Fire();
     }
 
     private void OnDisable()
@@ -40,11 +49,10 @@ public class CCinputManager : MonoBehaviour
         input.Players.Move.performed -= ctx => moveInput = ctx.ReadValue<Vector2>();
         input.Players.Move.canceled -= ctx => moveInput = Vector2.zero;
         input.Players.Jump.performed -= _ => TryJump();
+        input.Players.Fire.performed -= _ => Fire();
 
         input.Players.Disable();
     }
-
-
 
     private void Update()
     {
@@ -62,7 +70,7 @@ public class CCinputManager : MonoBehaviour
             yVelocity = -2f; // 바닥에 붙여두기용 작은 음수
 
         // (선택) 점프: Jump 액션 만들었을 때만 사용
-        void TryJump() { if (controller.isGrounded) yVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity); }
+        // void TryJump() { if (controller.isGrounded) yVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity); }
 
         yVelocity += gravity * Time.deltaTime;
 
@@ -74,5 +82,63 @@ public class CCinputManager : MonoBehaviour
     {
         if (controller.isGrounded)
             yVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+    }
+
+    /// 마우스 클릭 시 발사체를 발사 (Projectile 방식)
+    private void Fire()
+    {
+        if (projectilePrefab == null)
+        {
+            Debug.LogWarning("발사체 프리팹이 설정되지 않았습니다.");
+            return;
+        }
+
+        if (cameraTransform == null)
+        {
+            Debug.LogWarning("카메라 Transform이 설정되지 않았습니다.");
+            return;
+        }
+
+        // 발사 시작 위치 결정 (카메라 앞쪽 0.5m)
+        Vector3 spawnPosition = firePoint != null ? firePoint.position : cameraTransform.position + cameraTransform.forward * 0.5f;
+
+        // 화면 중앙(크로스헤어)에서 Raycast를 쏴서 목표 지점 찾기
+        Vector3 targetPoint;
+        Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance))
+        {
+            // Raycast가 무언가에 맞음
+            targetPoint = hit.point;
+            Debug.Log($"shooted {hit.collider.name} (distance: {hit.distance:F2}m)");
+        }
+        else
+        {
+            // Raycast가 아무것도 맞지 않음
+            targetPoint = ray.origin + ray.direction * raycastDistance;
+            Debug.Log("shooted");
+        }
+
+        // 발사 방향 계산 (발사 위치에서 목표 지점으로)
+        Vector3 fireDirection = (targetPoint - spawnPosition).normalized;
+
+        // 발사체 생성
+        GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.LookRotation(fireDirection));
+
+        // Projectile 스크립트가 있다면 속도 설정
+        Projectile projectileScript = projectile.GetComponent<Projectile>();
+        if (projectileScript != null)
+        {
+            projectileScript.Launch(fireDirection, projectileSpeed);
+        }
+        else
+        {
+            // Rigidbody로 직접 속도 설정
+            Rigidbody rb = projectile.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = fireDirection * projectileSpeed;
+            }
+        }
     }
 }
