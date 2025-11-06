@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 public class CCinputManager : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class CCinputManager : MonoBehaviour
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 5f;
+    [SerializeField][Range(1.5f, 3f)] private float sprintMultiplier = 2f; // 달리기 속도 배율
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float jumpHeight = 1.2f;
 
@@ -65,6 +67,13 @@ public class CCinputManager : MonoBehaviour
         Vector3 move = camForward * moveInput.y + camRight * moveInput.x; // y는 전후, x는 좌우
         if (move.sqrMagnitude > 1f) move.Normalize();
 
+        // 달리기: Shift & 앞으로 이동 (moveInput.y > 0)
+        float currentSpeed = moveSpeed;
+        if (Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed && moveInput.y > 0)
+        {
+            currentSpeed = moveSpeed * sprintMultiplier;
+        }
+
         // 중력 처리 + 점프 착지 클램프
         if (controller.isGrounded && yVelocity < 0f)
             yVelocity = -2f; // 바닥에 붙여두기용 작은 음수
@@ -74,7 +83,7 @@ public class CCinputManager : MonoBehaviour
 
         yVelocity += gravity * Time.deltaTime;
 
-        Vector3 velocity = move * moveSpeed + Vector3.up * yVelocity;
+        Vector3 velocity = move * currentSpeed + Vector3.up * yVelocity;
         controller.Move(velocity * Time.deltaTime);
     }
 
