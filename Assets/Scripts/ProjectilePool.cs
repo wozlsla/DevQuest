@@ -55,7 +55,7 @@ public class ProjectilePool : MonoBehaviour
     {
         if (projectilePrefab == null)
         {
-            Debug.LogError("ProjectilePool: projectilePrefab이 설정되지 않았습니다!");
+            Debug.LogError("ProjectilePool: projectilePrefab이 설정되지 않았습니다.");
             return;
         }
 
@@ -64,7 +64,7 @@ public class ProjectilePool : MonoBehaviour
             CreateNewProjectile();
         }
 
-        Debug.Log($"ProjectilePool 초기화 완료: {initialPoolSize}개의 발사체 생성");
+        Debug.Log($"ProjectilePool 초기화 완료: {initialPoolSize}개의 발사체 생성.");
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public class ProjectilePool : MonoBehaviour
     {
         if (projectilePrefab == null)
         {
-            Debug.LogError("ProjectilePool: projectilePrefab이 설정되지 않았습니다! Inspector에서 프리팹을 할당하세요.");
+            Debug.LogError("ProjectilePool: projectilePrefab이 설정되지 않았습니다. Inspector에서 프리팹을 할당하세요.");
             return null;
         }
 
@@ -93,7 +93,7 @@ public class ProjectilePool : MonoBehaviour
     }
 
     /// <summary>
-    /// 풀에서 발사체를 가져옴
+    /// 풀에서 발사체를 가져옴
     /// </summary>
     public GameObject GetProjectile()
     {

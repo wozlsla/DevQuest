@@ -36,6 +36,13 @@ public class Projectile : MonoBehaviour
         hasHit = false;
         spawnTime = Time.time;
 
+        // Rigidbody 상태 초기화 (이전 사용 시 남은 속도 제거)
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
         // 생존 시간 후 자동으로 풀로 반환
         if (lifeTimeCoroutine != null)
         {
@@ -86,7 +93,22 @@ public class Projectile : MonoBehaviour
         float actualSpeed = customSpeed > 0 ? customSpeed : speed;
         if (rb != null)
         {
+            // 이전 속도 완전히 제거
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            // 새로운 속도 설정
             rb.linearVelocity = direction.normalized * actualSpeed;
+        }
+    }
+
+    private void Update()
+    {
+        // 발사체가 날아가는 방향 시각화 (씬 뷰에서만 보임)
+        if (rb != null && rb.linearVelocity.magnitude > 0.1f)
+        {
+            // 파란색으로 현재 이동 방향 표시
+            Debug.DrawRay(transform.position, rb.linearVelocity.normalized * 5f, Color.magenta, Time.deltaTime);
         }
     }
 
