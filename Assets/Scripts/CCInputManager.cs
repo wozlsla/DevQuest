@@ -84,18 +84,20 @@ public class CCinputManager : MonoBehaviour
             yVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
     }
 
-    /// 마우스 클릭 시 발사체를 발사 (Projectile 방식)
+    /// 마우스 클릭 시 발사체 발사 (Object Pooling 방식)
     private void Fire()
     {
-        if (projectilePrefab == null)
-        {
-            Debug.LogWarning("발사체 프리팹이 설정되지 않았습니다.");
-            return;
-        }
-
         if (cameraTransform == null)
         {
             Debug.LogWarning("카메라 Transform이 설정되지 않았습니다.");
+            return;
+        }
+
+        // Object Pool에서 발사체 가져오기
+        GameObject projectile = ProjectilePool.Instance.GetProjectile();
+        if (projectile == null)
+        {
+            Debug.LogWarning("사용 가능한 발사체가 없습니다.");
             return;
         }
 
@@ -122,8 +124,9 @@ public class CCinputManager : MonoBehaviour
         // 발사 방향 계산 (발사 위치에서 목표 지점으로)
         Vector3 fireDirection = (targetPoint - spawnPosition).normalized;
 
-        // 발사체 생성
-        GameObject projectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.LookRotation(fireDirection));
+        // 발사체 위치 및 회전 설정
+        projectile.transform.position = spawnPosition;
+        projectile.transform.rotation = Quaternion.LookRotation(fireDirection);
 
         // Projectile 스크립트가 있다면 속도 설정
         Projectile projectileScript = projectile.GetComponent<Projectile>();

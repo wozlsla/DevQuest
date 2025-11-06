@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 
@@ -11,6 +12,8 @@ public class Projectile : MonoBehaviour
     private Rigidbody rb;
     private bool hasHit = false;
     private float spawnTime;
+    private ProjectilePool pool; // Object Pool 참조
+    private Coroutine lifeTimeCoroutine; // 생존 시간 코루틴 참조
 
     private void Awake()
     {
@@ -25,15 +28,47 @@ public class Projectile : MonoBehaviour
         // 설정 적용
         rb.useGravity = useGravity;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // 빠른 오브젝트용
-
-        // 생성 시간 기록
-        spawnTime = Time.time;
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        // 일정 시간 후 자동 파괴
-        Destroy(gameObject, lifeTime);
+        // 발사체가 풀에서 활성화될 때마다 초기화
+        hasHit = false;
+        spawnTime = Time.time;
+
+        // 생존 시간 후 자동으로 풀로 반환
+        if (lifeTimeCoroutine != null)
+        {
+            StopCoroutine(lifeTimeCoroutine);
+        }
+        lifeTimeCoroutine = StartCoroutine(ReturnToPoolAfterLifetime());
+    }
+
+    private void OnDisable()
+    {
+        // 비활성화 시 코루틴 정리
+        if (lifeTimeCoroutine != null)
+        {
+            StopCoroutine(lifeTimeCoroutine);
+            lifeTimeCoroutine = null;
+        }
+    }
+
+    /// <summary>
+    /// 생존 시간이 지나면 풀로 반환
+    /// </summary>
+    private IEnumerator ReturnToPoolAfterLifetime()
+    {
+        yield return new WaitForSeconds(lifeTime);
+        ReturnToPool();
+    }
+
+    /// <summary>
+    /// 풀 참조 설정 (ProjectilePool에서 호출)
+    /// </summary>
+    public void SetPool(ProjectilePool projectilePool)
+    {
+        pool = projectilePool;
     }
 
     // 발사체 속도 설정
@@ -66,20 +101,39 @@ public class Projectile : MonoBehaviour
 
         Debug.Log($"HIT: {collision.gameObject.name}");
 
-        Destroy(gameObject);
+        // Destroy 대신 풀로 반환
+        ReturnToPool();
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (Time.time - spawnTime < 0.1f) return;
 
-        // Trigger 충돌 처리 (옵션)
+        // Trigger 충돌 처리
         if (hasHit) return;
         hasHit = true;
 
-        Debug.Log($"발사체가 {other.name}을 통과!");
+        Debug.Log($"PASS: {other.name}");
 
-        Destroy(gameObject);
+        // Destroy 대신 풀로 반환
+        ReturnToPool();
+    }
+
+    /// <summary>
+    /// 발사체를 풀로 반환
+    /// </summary>
+    private void ReturnToPool()
+    {
+        if (pool != null)
+        {
+            pool.ReturnProjectile(gameObject);
+        }
+        else
+        {
+            // 풀이 없으면 기존 방식으로 파괴 (하위 호환성)
+            Debug.LogWarning("ProjectilePool이 설정되지 않아 Destroy로 처리합니다.");
+            Destroy(gameObject);
+        }
     }
 }
 
