@@ -8,6 +8,7 @@ public class Projectile : MonoBehaviour
     [SerializeField] private float speed = 30f; // 발사체 속도
     [SerializeField] private float lifeTime = 5f; // 생존 시간 (초)
     [SerializeField] private bool useGravity = false; // 중력 사용 여부
+    [SerializeField] private float damage = 20f; // 데미지
 
     private Rigidbody rb;
     private bool hasHit = false;
@@ -121,7 +122,15 @@ public class Projectile : MonoBehaviour
         if (hasHit) return;
         hasHit = true;
 
-        Debug.Log($"HIT: {collision.gameObject.name}");
+        Debug.Log($"[Projectile] HIT: {collision.gameObject.name}");
+
+        // 적에게 데미지 주기
+        Enemy enemy = collision.gameObject.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.TakeDamage(damage);
+            Debug.Log($"[Projectile] 적에게 {damage} 데미지!");
+        }
 
         // Destroy 대신 풀로 반환
         ReturnToPool();
@@ -135,7 +144,15 @@ public class Projectile : MonoBehaviour
         if (hasHit) return;
         hasHit = true;
 
-        Debug.Log($"PASS: {other.name}");
+        Debug.Log($"[Projectile] TRIGGER: {other.name}");
+
+        // 적에게 데미지 주기 (Trigger Collider인 경우)
+        Enemy enemy = other.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.TakeDamage(damage);
+            Debug.Log($"[Projectile] 적에게 {damage} 데미지!");
+        }
 
         // Destroy 대신 풀로 반환
         ReturnToPool();
