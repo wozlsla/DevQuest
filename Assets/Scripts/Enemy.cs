@@ -237,6 +237,12 @@ public class Enemy : MonoBehaviour
                     agent.enabled = false; // NavMeshAgent 비활성화 (더 이상 움직이지 않음)
                     GetComponent<Collider>().enabled = false; // Collider 비활성화 (죽은 적과 충돌 방지)
 
+                    // GameManager에 Enemy 처치 알림
+                    if (GameManager.Instance != null)
+                    {
+                        GameManager.Instance.OnEnemyDeath();
+                    }
+
                     // 3초 후 오브젝트 파괴
                     Destroy(gameObject, 3f);
                     break;
@@ -431,5 +437,16 @@ public class Enemy : MonoBehaviour
 
         // Raycast가 아무것도 맞추지 않았으면 (거리가 짧거나, 플레이어를 정확히 맞추지 못했을 경우)
         return true;
+    }
+
+    // UI용 체력 Getter 함수들
+    public float GetCurrentHP()
+    {
+        return currentHP;
+    }
+
+    public float GetMaxHP()
+    {
+        return maxHP;
     }
 }

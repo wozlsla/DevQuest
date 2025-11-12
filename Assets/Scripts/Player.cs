@@ -59,22 +59,32 @@ public class Player : MonoBehaviour
     // 게임오버
     private void GameOver()
     {
-        Debug.Log("=================================");
-        Debug.Log("        GAME OVER!");
-        Debug.Log("        R키를 눌러 재시작");
-        Debug.Log("=================================");
+        // GameManager를 통해 게임오버 처리
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.GameOver();
+        }
+        else
+        {
+            // GameManager가 없으면 기존 방식으로 처리
+            Debug.Log("=================================");
+            Debug.Log("        GAME OVER");
+            Debug.Log("        R키를 눌러 재시작");
+            Debug.Log("=================================");
 
-        // 게임 완전히 멈추기
-        Time.timeScale = 0f;
+            // 게임 완전히 멈추기
+            Time.timeScale = 0f;
 
-        // 선택: 3초 후 재시작
-        // Invoke("RestartGame", 3f);
+            // 선택: 3초 후 재시작
+            // Invoke("RestartGame", 3f);
+        }
     }
 
     private void Update()
     {
-        // 게임오버 후 R키로 재시작
-        if (isDead && Input.GetKeyDown(KeyCode.R))
+        // GameManager가 없을 경우에만 직접 재시작 처리
+        // (GameManager가 있으면 GameManager에서 R키 처리)
+        if (GameManager.Instance == null && isDead && Input.GetKeyDown(KeyCode.R))
         {
             RestartGame();
         }
@@ -100,7 +110,7 @@ public class Player : MonoBehaviour
             currentHP = maxHP;
         }
 
-        Debug.Log($"[Player] {amount} 회복! 현재 체력: {currentHP}/{maxHP}");
+        Debug.Log($"[Player] {amount} 회복. 현재 체력: {currentHP}/{maxHP}"); // debug
     }
 
     // 현재 체력 반환 (UI 표시용 - 아직 미구현)
