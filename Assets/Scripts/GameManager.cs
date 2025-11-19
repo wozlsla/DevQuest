@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     [Header("Game Settings")]
-    [SerializeField] private int enemiesToKillForVictory = 3; // 승리를 위해 처치해야 할 Enemy 수
+    [SerializeField] private int enemiesToKillForVictory = 1; // 승리를 위해 처치해야 할 Enemy 수
 
     [Header("Game State")]
     private int totalEnemies; // 게임 시작 시 총 Enemy 수

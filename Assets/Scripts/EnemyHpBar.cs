@@ -1,20 +1,20 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // TextMeshPro 사용
+using TMPro;
 
 public class EnemyHpBar : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private Slider healthSlider; // HP 슬라이더
-    [SerializeField] private TextMeshProUGUI healthText; // HP 텍스트 (선택사항, TMP)
+    [SerializeField] private Slider hpSlider; // HP 슬라이더
+    [SerializeField] private TextMeshProUGUI hpText; // HP 텍스트 (선택사항, TMP)
     [SerializeField] private Image fillImage; // 슬라이더 채우기 이미지
 
     [Header("Settings")]
     [SerializeField] private Vector3 offset = new Vector3(0, 2.5f, 0); // Enemy 머리 위 오프셋
     [SerializeField] private bool alwaysFaceCamera = true; // 항상 카메라를 바라봄
 
-    private Enemy enemy; // Enemy 참조
     private Camera mainCamera;
+    private Enemy enemy;
 
     private void Start()
     {
@@ -37,7 +37,7 @@ public class EnemyHpBar : MonoBehaviour
         }
 
         // UI 컴포넌트 확인
-        if (healthSlider == null) Debug.LogWarning("[EnemyHpBar] Health Slider가 연결되지 않음!");
+        if (hpSlider == null) Debug.LogWarning("[EnemyHpBar] Health Slider가 연결되지 않음!");
         if (fillImage == null) Debug.LogWarning("[EnemyHpBar] Fill Image가 연결되지 않음!");
 
         // 초기 HP 업데이트
@@ -74,16 +74,16 @@ public class EnemyHpBar : MonoBehaviour
         float maxHP = enemy.GetMaxHP();
 
         // 슬라이더 업데이트
-        if (healthSlider != null)
+        if (hpSlider != null)
         {
-            healthSlider.maxValue = maxHP;
-            healthSlider.value = currentHP;
+            hpSlider.maxValue = maxHP;
+            hpSlider.value = currentHP;
         }
 
         // 텍스트 업데이트 (선택사항)
-        if (healthText != null)
+        if (hpText != null)
         {
-            healthText.text = $"{currentHP:F0}/{maxHP:F0}";
+            hpText.text = $"{currentHP:F0}/{maxHP:F0}";
         }
 
         // 체력에 따라 색상 변경

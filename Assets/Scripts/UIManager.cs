@@ -66,8 +66,8 @@ public class UIManager : MonoBehaviour
     {
         if (player == null) return;
 
-        float currentHP = player.GetCurrentHP();
-        float maxHP = player.GetMaxHP();
+        float currentHP = player.CurrentHP;
+        float maxHP = player.MaxHP;
 
         // HP 텍스트 업데이트
         if (hpText != null)
@@ -147,7 +147,7 @@ public class UIManager : MonoBehaviour
 
         if (gameResultMessage != null)
         {
-            gameResultMessage.text = "적에게 패배했습니다...";
+            gameResultMessage.text = "적에게 패배했습니다..."; // 한글 오류 미해결
         }
 
         if (restartText != null)
