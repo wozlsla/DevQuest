@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
+using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class CCinputManager : MonoBehaviour
 {
@@ -19,17 +21,60 @@ public class CCinputManager : MonoBehaviour
     [SerializeField] private Transform firePoint; // 발사 위치 (없으면 카메라 위치)
     [SerializeField] private float projectileSpeed = 30f; // 발사체 속도
     [SerializeField] private float raycastDistance = 100f; // 100m 까지 확인 -> 조준점 찾기 (Raycast: 레이저를 쏴서 무엇에 맞는지 확인하는 기능)
+    [SerializeField] private LayerMask ignoreLayers; // 발사 시 무시할 레이어 (플레이어 자신 등)
 
     private PlayerActions input; // Unity Input System
     private Vector2 moveInput;
     private float yVelocity; // 수직(Y축) 속도 -> 점프하면 양수, 떨어지면 음수
+    private InputAction xrTriggerAction; // XR 컨트롤러 Trigger 액션
+    private float lastFireTime = 0f; // 마지막 발사 시간 (중복 방지)
+    private const float FIRE_COOLDOWN = 0.1f; // 발사 쿨다운 (초)
 
     /* 게임 시작 시 초기화 작업 
        스크립트가 로드될 때 가장 먼저 실행 (Start 보다 먼저 실행) */
     private void Awake()
     {
         if (controller == null) controller = GetComponent<CharacterController>(); // Inspector에서 할당하지 않았을 경우
+
+        // Camera Transform 자동 찾기
+        if (cameraTransform == null)
+        {
+            // 1순위: MainCamera 태그로 찾기 (XR Origin의 카메라도 MainCamera 태그를 가짐)
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                cameraTransform = mainCamera.transform;
+                Debug.Log($"[CCinputManager] Camera found: {cameraTransform.name}");
+            }
+            else
+            {
+                // 2순위: 자식 오브젝트 중에서 Camera 컴포넌트 찾기
+                Camera childCamera = GetComponentInChildren<Camera>();
+                if (childCamera != null)
+                {
+                    cameraTransform = childCamera.transform;
+                    Debug.Log($"[CCinputManager] Child camera found: {cameraTransform.name}");
+                }
+                else
+                {
+                    Debug.LogError("[CCinputManager] Camera를 찾을 수 없습니다! Player 하위에 Camera가 있는지 확인하세요.");
+                }
+            }
+        }
+
+        // Ignore Layers 자동 설정 (Inspector에서 설정하지 않았을 경우) -> 현재 6으로 설정돼있음
+        if (ignoreLayers == 0)
+        {
+            // Player 레이어를 제외한 모든 레이어 (자기 자신을 쏘지 않기 위해)
+            ignoreLayers = ~LayerMask.GetMask("Player");
+            Debug.Log("[CCinputManager] Ignore Layers 자동 설정: Player 레이어 제외");
+        }
+
         input = new PlayerActions(); // 입력 시스템 객체 생성
+
+        // XR Trigger 액션 생성 (XR 컨트롤러의 Trigger 버튼)
+        xrTriggerAction = new InputAction("XR Trigger", InputActionType.Button);
+        xrTriggerAction.AddBinding("<XRController>{RightHand}/trigger");
     }
 
     /* 오브젝트가 활성화될 때마다 실행 -> 입력 이벤트 구독 */
@@ -46,7 +91,15 @@ public class CCinputManager : MonoBehaviour
         input.Players.Jump.performed += _ => TryJump();
 
         // Fire 액션 (마우스 클릭으로 발사)
-        input.Players.Fire.performed += _ => Fire();
+        input.Players.Fire.performed += _ =>
+        {
+            Debug.Log("[Input] 마우스/키보드로 발사");
+            Fire();
+        };
+
+        // XR Trigger 액션 활성화 및 구독
+        xrTriggerAction.performed += OnXRTriggerPressed;
+        xrTriggerAction.Enable();
     }
 
     /* 오브젝트가 비활성화될 때 실행 -> 입력 이벤트 구독 취소**
@@ -58,7 +111,26 @@ public class CCinputManager : MonoBehaviour
         input.Players.Jump.performed -= _ => TryJump();
         input.Players.Fire.performed -= _ => Fire();
 
+        // XR Trigger 구독 해제 및 비활성화
+        xrTriggerAction.performed -= OnXRTriggerPressed;
+        xrTriggerAction.Disable();
+
         input.Players.Disable();
+    }
+
+    private void OnDestroy()
+    {
+        // InputAction 메모리 정리
+        xrTriggerAction?.Dispose();
+    }
+
+    /// <summary>
+    /// XR 컨트롤러 Trigger가 눌렸을 때 호출되는 콜백
+    /// </summary>
+    private void OnXRTriggerPressed(InputAction.CallbackContext context)
+    {
+        Debug.Log("[Input] XR 컨트롤러 Trigger로 발사");
+        Fire();
     }
 
     private void Update()
@@ -103,6 +175,14 @@ public class CCinputManager : MonoBehaviour
     /// 마우스 클릭 시 발사체 발사 (Object Pooling 방식)
     private void Fire()
     {
+        // 0. 쿨다운 체크 (중복 발사 방지)
+        float currentTime = Time.time;
+        if (currentTime - lastFireTime < FIRE_COOLDOWN)
+        {
+            return; // 쿨다운 중이면 발사 무시
+        }
+        lastFireTime = currentTime;
+
         // 1. 카메라 확인 (->조준)
         if (cameraTransform == null)
         {
@@ -129,8 +209,8 @@ public class CCinputManager : MonoBehaviour
         // 1. Ray(시작점과 방향을 가진 무한한 선) 생성
         Ray ray = new Ray(cameraTransform.position, cameraTransform.forward); // 카메라 위치에서, 카메라가 보는 방향
 
-        // 2. Raycast 쏘기 (충돌 감지)
-        if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance))
+        // 2. Raycast 쏘기 (충돌 감지) - Player 레이어 제외
+        if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance, ignoreLayers))
         {
             // true) Raycast가 무언가에 맞음
             targetPoint = hit.point; // 광선이 맞은 3D 좌표
@@ -170,5 +250,8 @@ public class CCinputManager : MonoBehaviour
                 rb.linearVelocity = fireDirection * projectileSpeed; // 방향 * 속력 = 속도 벡터
             }
         }
+
+        // 4. 햅틱 피드백 (VR 컨트롤러 진동)
+        HapticFeedbackManager.Instance.TriggerFireHaptic();
     }
 }

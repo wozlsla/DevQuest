@@ -115,9 +115,6 @@ public class Projectile : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        // 발사 직후 0.1초 동안은 충돌 무시 (발사한 Player와의 충돌 방지)
-        if (Time.time - spawnTime < 0.1f) return;
-
         // 이미 맞았으면 무시 (다중 충돌 방지 -> 첫 충돌만 처리)
         if (hasHit) return;
         hasHit = true;
@@ -138,8 +135,6 @@ public class Projectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (Time.time - spawnTime < 0.1f) return;
-
         // Trigger 충돌 처리
         if (hasHit) return;
         hasHit = true;
